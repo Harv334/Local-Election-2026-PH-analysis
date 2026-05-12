@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reform vote share across England, by self-reported health status (Census)</title>
+<style>
+  :root {
+    --bg: #FFFFFF;
+    --ink: #1A1A1A;
+    --muted: #6B6B6B;
+    --grid: #E6E1D8;
+    --reform: #12B6CF;
+    --reform-dark: #08596B;
+    --con: #0087DC;
+    --con-dark: #003F6E;
+    --lab: #E4003B;
+    --lab-dark: #8C001B;
+    --ld: #FAA61A;
+    --ld-dark: #9F6500;
+    --grn: #02A95B;
+    --grn-dark: #016D3A;
+    --noc: #B0B0B0;
+    --noc-dark: #666666;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+  .container {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 24px 20px 40px;
+  }
+  h1 {
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1.15;
+    margin: 0 0 4px;
+    color: var(--ink);
+  }
+  h1 .accent { color: var(--reform-dark); display: block; }
+  .subtitle {
+    font-style: italic;
+    color: var(--muted);
+    font-size: 14px;
+    margin: 8px 0 18px;
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
+    font-size: 12.5px;
+    margin-bottom: 4px;
+    color: var(--ink);
+  }
+  .legend-label {
+    font-weight: 500;
+    color: var(--ink);
+  }
+  .legend-line {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+  .legend-dot {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: 500;
+  }
+  .legend-dot::before {
+    content: "";
+    display: inline-block;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+  }
+  .legend-dot.reform { color: var(--reform-dark); }
+  .legend-dot.reform::before { background: var(--reform); border: 1.5px solid var(--reform-dark); }
+  .legend-dot.con { color: var(--con-dark); }
+  .legend-dot.con::before { background: var(--con); border: 1.5px solid var(--con-dark); }
+  .legend-dot.lab { color: var(--lab-dark); }
+  .legend-dot.lab::before { background: var(--lab); border: 1.5px solid var(--lab-dark); }
+  .legend-dot.ld { color: var(--ld-dark); }
+  .legend-dot.ld::before { background: var(--ld); border: 1.5px solid var(--ld-dark); }
+  .legend-dot.grn { color: var(--grn-dark); }
+  .legend-dot.grn::before { background: var(--grn); border: 1.5px solid var(--grn-dark); }
+  .legend-dot.noc { color: var(--noc-dark); }
+  .legend-dot.noc::before { background: var(--noc); }
+  .chart-wrap {
+    position: relative;
+    width: 100%;
+  }
+  svg { width: 100%; height: auto; display: block; }
+
+  /* Dot interactivity */
+  .dot { transition: opacity 0.15s; cursor: pointer; }
+  .chart-wrap.has-hover .dot { opacity: 0.30; }
+  .chart-wrap.has-hover .dot.hovered { opacity: 1; }
+  .chart-wrap.has-hover .label-group { opacity: 0.25; }
+
+  .label-text {
+    font-size: 10px;
+    font-weight: 500;
+    pointer-events: none;
+  }
+
+  /* Tooltip */
+  .tooltip {
+    position: absolute;
+    background: var(--bg);
+    border: 1px solid var(--grid);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 12px;
+    color: var(--ink);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.12s;
+    min-width: 200px;
+    max-width: 260px;
+    z-index: 10;
+  }
+  .tooltip.visible { opacity: 1; }
+  .tooltip .name {
+    font-weight: 600;
+    font-size: 13.5px;
+    margin-bottom: 4px;
+  }
+  .tooltip .year {
+    font-size: 11px;
+    color: var(--muted);
+    font-style: italic;
+    margin-bottom: 8px;
+  }
+  .tooltip .stat {
+    display: flex;
+    justify-content: space-between;
+    line-height: 1.6;
+    border-top: 1px solid var(--grid);
+    padding-top: 4px;
+    margin-top: 4px;
+  }
+  .tooltip .stat:first-of-type {
+    border-top: none;
+    padding-top: 0;
+    margin-top: 0;
+  }
+  .tooltip .stat-label { color: var(--muted); }
+  .tooltip .stat-value { font-weight: 600; }
+
+  .source {
+    font-size: 11px;
+    color: var(--muted);
+    font-style: italic;
+    margin-top: 16px;
+    text-align: left;
+  }
+
+  @media (max-width: 480px) {
+    .container { padding: 16px 12px 28px; }
+    h1 { font-size: 22px; }
+    .legend { gap: 10px; font-size: 11.5px; }
+    .legend-line { font-size: 11px; }
+    .tooltip { font-size: 11.5px; min-width: 180px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <h1>Reform vote share across England,
+    <span class="accent">by self-reported health status (Census)</span>
+  </h1>
+  <p class="subtitle">160 council elections across May 2025 &amp; May 2026 &nbsp;·&nbsp; hover or tap a dot for details</p>
+
+  <div class="legend">
+    <span class="legend-label">Filled = party won majority of seats (all-out election):</span>
+    <span class="legend-dot reform">Reform UK</span>
+    <span class="legend-dot con">Conservative</span>
+    <span class="legend-dot lab">Labour</span>
+    <span class="legend-dot ld">Lib Dem</span>
+    <span class="legend-dot grn">Green</span>
+    <span class="legend-dot noc">No overall control</span>
+  </div>
+  <p class="legend-line">○ Hollow ring = only 1/3 of seats up this year. Coloured if a party won majority of seats contested - grey if not.</p>
+
+  <div class="chart-wrap" id="chartWrap">
+    <svg viewBox="0 0 760 720" preserveAspectRatio="xMidYMid meet" id="chart" role="img"
+         aria-label="Scatter plot of Reform UK vote share against self-reported poor health, 160 English council elections.">
+      <!-- chart content injected by JS -->
+    </svg>
+    <div class="tooltip" id="tooltip"></div>
+  </div>
+  <p class="source">Chart: Harvey Seville<br>Election Data: Democracy Club · ONS Census 2021 via Nomis</p>
+</div>
+
+<script>
+"use strict";
+
+const DATA = {"rows": [{"year": "2025", "name": "Buckinghamshire", "pop": 553079, "reform": 19.6558, "health": 3.3308, "controlled_by": "NOC", "party_seats": "NOC", "el_type": "all-out", "tier": "noc_filled"}, {"year": "2025", "name": "Cambridgeshire CC", "pop": 678848, "reform": 22.9866, "health": 4.1395, "controlled_by": "LD", "party_seats": "LD", "el_type": "all-out", "tier": "filled"}, {"year": "2025", "name": "Cornwall", "pop": 570305, "reform": 29.0539, "health": 6.1862, "controlled_by": "unknown_thirds", "party_seats": "NOC", "el_type": "thirds", "tier": "noc_hollow"}, {"year": "2025", "name": "County Durham", "pop": 522068, "reform": 40.7235, "health": 7.503, "controlled_by": "Reform", "party_seats": "Reform", "el_type": "all-out", "tier": "filled"}, {"year": "2025", "name": "Derbyshire CC", "pop": 794638, "reform": 36.7712, "health": 5.8691, "controlled_by": "Reform", "party_seats": "Reform", "el_type": "all-out", "tier": "filled"}, {"year": "2025", "name": "Devon CC", "pop": 811639, "reform": 27.2417, "health": 5.1476, "controlled_by": "NOC", "party_seats": "NOC", "el_type": "all-out", "tier": "noc_filled"}, {"year": "2025", "name": "Doncaster", "pop": 308104, "reform": 40.551, "health": 6.8603, "controlled_by": "Reform", "party_seats": "Reform", "el_type": "all-out", "tier": "filled"}, {"year": "2025", "name": "Gloucestershire CC", "pop": 645075, "reform": 25.2205, "health": 4.3841, "controlled_by": "NOC", "party_seats": "NOC", "el_type": "all-out", "tier": "noc_filled"}, {"year": "2025", "name": "Hertfordshire CC", "pop": 1043715, "reform": 24.0041, "health": 3.7377, "controlled_by": "NOC", "party_seats": "NOC", "el_type": "all-out", "tier": "noc_filled"}, {"year": "2025", "name": "Isles of Scilly", "pop": 2054, "reform": 0.0, "health": 4.0409, "controlled_by": "Other", "party_seats": "Other", "el_type": "all-out", "tier": "noc_filled"}, {"year": "2025", "name": "Kent CC", "pop": 1576072, "reform": 36.985, "health": 4.9972, "controlled_by": "Reform", "party_seats": "Reform", "el_type": "all-out", "tier": "filled"}, {"year": "2025", "name": "Lancashire CC", "pop": 1235359, "reform": 35.687, "health": 5.7915, "controlled_by": "Reform", "party_seats": "Reform", "el_type": "all-out", "tier": "filled"}, {"year": "2025", "name": "Leicestershire CC", "pop": 712369, "reform": 32.4947, "health": 4.3406, "controlled_by": "NOC", "party_seats": "NOC", "el_type": "all-out", "tier": "noc_filled"}, {"year": "2025", "name": "Lincolnshire CC", "pop": 768364, "reform": 39.4473, "health": 5.8139, "controlled_by": "Reform", "party_seats": "Reform", "el_type": "all-out", "tier": "filled"}, {"year": "2025", "name": "North Northamptonshire", "pop": 359524, "reform": 34.982, "health": 4.8812, "controlled_by": "Reform", "party_seats": "Reform", "el_type": "all-out", "tier": "filled"}, {"year": "2025", "name": "Northumberland", "pop": 320567, "reform": 29.2519, "health": 6.2215, "controlled_by": "unknown_thirds", "party_seats": "NOC", "el_type": "thirds", "tier": "noc_hollow"}, {"year": "2025", "name": "Nottinghamshire CC", "pop": 824822, "reform": 37.1442, "health": 5.8249, "controlled_by": "Reform", "party_seats": "Reform", "el_type": "all-out", "tier": "filled"}, {"year": "2025", "name": "Oxfordshire CC", "pop": 725292, "reform": 17.8021, "health": 3.423, "controlled_by": "LD", "party_seats": "LD", "el_type": "all-out", "tier": "filled"}, {"year": "2025", "name": "Shropshire", "pop": 323606, "reform": 27.4216, "health": 5.0818, "controlled_by": "unknown_thirds", "party_seats": "LD", "el_type": "thirds", "tier": "hollow"}, {"year": "2025", "name": "Staffordshire CC", "pop": 876108, "reform": 41.5747, "health": 5.4709, "controlled_by": "Reform", "party_seats": "Reform", "el_type": "all-out", "tier": "filled"}, {"year": "2025", "name": "Warwickshire CC", "pop": 596772, "reform": 30.6386, "health": 4.619, "controlled_by": "NOC", "party_seats": "NOC", "el_type": "all-out", "tier": "noc_filled"}, {"year": "2025", "name": "West Northamptonshire", "pop": 425725, "reform": 33.0699, "health": 4.1247, "controlled_by": "Reform", "party_seats": "Reform", "el_type": "all-out", "tier": "filled"}, {"year": "2025", "name": "Wiltshire", "pop": 510333, "reform": 22.1799, "health": 4.2302, "controlled_by": "unknown_thirds", "party_seats": "NOC", "el_type": "thirds", "tier": "noc_hollow"}, {"year": "2025", "name": "Worcestershire CC", "pop": 603678, "reform": 31.6532, "health": 5.0035, "controlled_by": "NOC", "party_seats": "NOC", "el_type": "all-out", "tier": "noc_filled"}, {"year": "2026", "name": "Adur", "pop": 64544, "reform": 29.2883, "health": 5.5636, "controlled_by": "unknown_thirds", "party_seats": "NOC", "el_type": "thirds", "tier": "noc_hollow"}, {"year": "2026", "name": "Barking and Dagenham", "pop": 218869, "reform": 26.8861, "health": 4.8737, "controlled_by": "Lab", "party_seats": "Lab", "el_type": "all-out", "tier": "filled"}, {"year": "2026", "name": "Barnet", "pop": 389344, "reform": 14.893, "health": 4.0193, "controlled_by": "NOC", "party_seats": "NOC", "el_type": "all-out", "tier": "noc_filled"}, {"year": "2026", "name": "Barnsley", "pop": 244572, "reform": 42.0352, "health": 7.5107, "controlled_by": "Reform", "party_seats": "Reform", "el_type": "all-out", "tier": "filled"}, {"year": "2026", "name": "Basildon", "pop": 187571, "reform": 40.8395, "health": 5.0381, "controlled_by": "unknown_thirds", "party_seats": "Reform", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Basingstoke and Deane", "pop": 185157, "reform": 24.7919, "health": 3.685, "controlled_by": "unknown_thirds", "party_seats": "NOC", "el_type": "thirds", "tier": "noc_hollow"}, {"year": "2026", "name": "Bexley", "pop": 246473, "reform": 32.3373, "health": 4.3254, "controlled_by": "Con", "party_seats": "Con", "el_type": "all-out", "tier": "filled"}, {"year": "2026", "name": "Birmingham", "pop": 1144919, "reform": 19.2656, "health": 5.9939, "controlled_by": "unknown_thirds", "party_seats": "NOC", "el_type": "thirds", "tier": "noc_hollow"}, {"year": "2026", "name": "Blackburn with Darwen", "pop": 154738, "reform": 29.5601, "health": 6.6377, "controlled_by": "unknown_thirds", "party_seats": "Reform", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Bolton", "pop": 295963, "reform": 32.5659, "health": 6.1484, "controlled_by": "unknown_thirds", "party_seats": "NOC", "el_type": "thirds", "tier": "noc_hollow"}, {"year": "2026", "name": "Bradford", "pop": 546408, "reform": 22.5638, "health": 5.945, "controlled_by": "NOC", "party_seats": "NOC", "el_type": "all-out", "tier": "noc_filled"}, {"year": "2026", "name": "Brent", "pop": 339814, "reform": 10.0392, "health": 4.37, "controlled_by": "NOC", "party_seats": "NOC", "el_type": "all-out", "tier": "noc_filled"}, {"year": "2026", "name": "Brentwood", "pop": 77047, "reform": 37.0081, "health": 3.7704, "controlled_by": "unknown_thirds", "party_seats": "NOC", "el_type": "thirds", "tier": "noc_hollow"}, {"year": "2026", "name": "Bromley", "pop": 329991, "reform": 20.5535, "health": 3.7995, "controlled_by": "Con", "party_seats": "Con", "el_type": "all-out", "tier": "filled"}, {"year": "2026", "name": "Broxbourne", "pop": 99007, "reform": 33.495, "health": 4.3775, "controlled_by": "unknown_thirds", "party_seats": "Con", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Burnley", "pop": 94645, "reform": 43.1064, "health": 6.9935, "controlled_by": "unknown_thirds", "party_seats": "Reform", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Bury", "pop": 193850, "reform": 30.3799, "health": 5.5584, "controlled_by": "unknown_thirds", "party_seats": "NOC", "el_type": "thirds", "tier": "noc_hollow"}, {"year": "2026", "name": "Calderdale", "pop": 206631, "reform": 36.2397, "health": 5.6874, "controlled_by": "Reform", "party_seats": "Reform", "el_type": "all-out", "tier": "filled"}, {"year": "2026", "name": "Cambridge", "pop": 145675, "reform": 9.2127, "health": 3.2373, "controlled_by": "unknown_thirds", "party_seats": "NOC", "el_type": "thirds", "tier": "noc_hollow"}, {"year": "2026", "name": "Camden", "pop": 210136, "reform": 7.5068, "health": 5.0777, "controlled_by": "Lab", "party_seats": "Lab", "el_type": "all-out", "tier": "filled"}, {"year": "2026", "name": "Cannock Chase", "pop": 100520, "reform": 53.5664, "health": 6.4067, "controlled_by": "unknown_thirds", "party_seats": "Reform", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Cheltenham", "pop": 118837, "reform": 19.3478, "health": 4.0324, "controlled_by": "unknown_thirds", "party_seats": "LD", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Cherwell", "pop": 161018, "reform": 26.0532, "health": 3.7232, "controlled_by": "unknown_thirds", "party_seats": "NOC", "el_type": "thirds", "tier": "noc_hollow"}, {"year": "2026", "name": "Chorley", "pop": 117732, "reform": 35.931, "health": 5.1753, "controlled_by": "unknown_thirds", "party_seats": "NOC", "el_type": "thirds", "tier": "noc_hollow"}, {"year": "2026", "name": "Lincoln", "pop": 103813, "reform": 30.514, "health": 5.456, "controlled_by": "unknown_thirds", "party_seats": "NOC", "el_type": "thirds", "tier": "noc_hollow"}, {"year": "2026", "name": "Colchester", "pop": 192715, "reform": 29.3017, "health": 4.1818, "controlled_by": "unknown_thirds", "party_seats": "NOC", "el_type": "thirds", "tier": "noc_hollow"}, {"year": "2026", "name": "Coventry", "pop": 345325, "reform": 29.4322, "health": 5.3558, "controlled_by": "NOC", "party_seats": "NOC", "el_type": "all-out", "tier": "noc_filled"}, {"year": "2026", "name": "Crawley", "pop": 118493, "reform": 33.4245, "health": 4.3344, "controlled_by": "unknown_thirds", "party_seats": "Reform", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Croydon", "pop": 390719, "reform": 13.9207, "health": 4.2565, "controlled_by": "NOC", "party_seats": "NOC", "el_type": "all-out", "tier": "noc_filled"}, {"year": "2026", "name": "Dudley", "pop": 323488, "reform": 41.8936, "health": 6.0701, "controlled_by": "unknown_thirds", "party_seats": "Reform", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Ealing", "pop": 367115, "reform": 10.8369, "health": 4.1676, "controlled_by": "Lab", "party_seats": "Lab", "el_type": "all-out", "tier": "filled"}, {"year": "2026", "name": "Eastleigh", "pop": 136443, "reform": 25.2306, "health": 3.7862, "controlled_by": "unknown_thirds", "party_seats": "LD", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "East Surrey CC", "pop": 545802, "reform": 21.4553, "health": 3.3177, "controlled_by": "LD", "party_seats": "LD", "el_type": "all-out", "tier": "filled"}, {"year": "2026", "name": "East Sussex CC", "pop": 385698, "reform": 29.3831, "health": 6.2388, "controlled_by": "NOC", "party_seats": "NOC", "el_type": "all-out", "tier": "noc_filled"}, {"year": "2026", "name": "Enfield", "pop": 329984, "reform": 11.5354, "health": 4.8866, "controlled_by": "NOC", "party_seats": "NOC", "el_type": "all-out", "tier": "noc_filled"}, {"year": "2026", "name": "Epping Forest", "pop": 134980, "reform": 40.7041, "health": 4.0976, "controlled_by": "unknown_thirds", "party_seats": "Reform", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Essex CC", "pop": 1503521, "reform": 37.4013, "health": 4.674, "controlled_by": "Reform", "party_seats": "Reform", "el_type": "all-out", "tier": "filled"}, {"year": "2026", "name": "Exeter", "pop": 130709, "reform": 22.3243, "health": 4.5942, "controlled_by": "unknown_thirds", "party_seats": "NOC", "el_type": "thirds", "tier": "noc_hollow"}, {"year": "2026", "name": "Fareham", "pop": 114513, "reform": 25.7268, "health": 4.0336, "controlled_by": "unknown_thirds", "party_seats": "Con", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Gateshead", "pop": 196151, "reform": 37.0478, "health": 7.3647, "controlled_by": "Reform", "party_seats": "Reform", "el_type": "all-out", "tier": "filled"}, {"year": "2026", "name": "Gosport", "pop": 81952, "reform": 34.3126, "health": 5.4727, "controlled_by": "unknown_thirds", "party_seats": "Reform", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Greenwich", "pop": 289068, "reform": 17.6478, "health": 4.5962, "controlled_by": "Lab", "party_seats": "Lab", "el_type": "all-out", "tier": "filled"}, {"year": "2026", "name": "Hackney", "pop": 259146, "reform": 2.5725, "health": 5.0064, "controlled_by": "Grn", "party_seats": "Grn", "el_type": "all-out", "tier": "filled"}, {"year": "2026", "name": "Halton", "pop": 128480, "reform": 41.4116, "health": 7.6829, "controlled_by": "unknown_thirds", "party_seats": "Reform", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Hammersmith and Fulham", "pop": 183157, "reform": 11.5673, "health": 4.1216, "controlled_by": "Lab", "party_seats": "Lab", "el_type": "all-out", "tier": "filled"}, {"year": "2026", "name": "Hampshire CC", "pop": 1370825, "reform": 27.0626, "health": 4.0959, "controlled_by": "NOC", "party_seats": "NOC", "el_type": "all-out", "tier": "noc_filled"}, {"year": "2026", "name": "Haringey", "pop": 264238, "reform": 4.029, "health": 4.8581, "controlled_by": "NOC", "party_seats": "NOC", "el_type": "all-out", "tier": "noc_filled"}, {"year": "2026", "name": "Harlow", "pop": 93328, "reform": 20.1716, "health": 5.0896, "controlled_by": "unknown_thirds", "party_seats": "Con", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Harrow", "pop": 261203, "reform": 11.4381, "health": 3.8855, "controlled_by": "Con", "party_seats": "Con", "el_type": "all-out", "tier": "filled"}, {"year": "2026", "name": "Hart", "pop": 99408, "reform": 23.0789, "health": 2.8217, "controlled_by": "unknown_thirds", "party_seats": "NOC", "el_type": "thirds", "tier": "noc_hollow"}, {"year": "2026", "name": "Hartlepool", "pop": 92338, "reform": 49.6953, "health": 7.9675, "controlled_by": "unknown_thirds", "party_seats": "Reform", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Hastings", "pop": 90994, "reform": 25.5324, "health": 7.2675, "controlled_by": "unknown_thirds", "party_seats": "Grn", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Havant", "pop": 124208, "reform": 41.6406, "health": 5.6132, "controlled_by": "unknown_thirds", "party_seats": "Reform", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Havering", "pop": 262052, "reform": 37.8494, "health": 4.4392, "controlled_by": "Reform", "party_seats": "Reform", "el_type": "all-out", "tier": "filled"}, {"year": "2026", "name": "Hillingdon", "pop": 305909, "reform": 19.2425, "health": 3.962, "controlled_by": "Con", "party_seats": "Con", "el_type": "all-out", "tier": "filled"}, {"year": "2026", "name": "Hounslow", "pop": 288181, "reform": 18.2568, "health": 4.1363, "controlled_by": "Lab", "party_seats": "Lab", "el_type": "all-out", "tier": "filled"}, {"year": "2026", "name": "Huntingdonshire", "pop": 180833, "reform": 27.1891, "health": 4.2365, "controlled_by": "NOC", "party_seats": "NOC", "el_type": "all-out", "tier": "noc_filled"}, {"year": "2026", "name": "Hyndburn", "pop": 82234, "reform": 41.9319, "health": 6.9971, "controlled_by": "unknown_thirds", "party_seats": "Reform", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Ipswich", "pop": 139642, "reform": 31.678, "health": 5.0501, "controlled_by": "unknown_thirds", "party_seats": "Reform", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Isle of Wight", "pop": 140459, "reform": 31.8972, "health": 6.7386, "controlled_by": "unknown_thirds", "party_seats": "NOC", "el_type": "thirds", "tier": "noc_hollow"}, {"year": "2026", "name": "Islington", "pop": 216589, "reform": 6.1397, "health": 5.5446, "controlled_by": "Lab", "party_seats": "Lab", "el_type": "all-out", "tier": "filled"}, {"year": "2026", "name": "Kensington and Chelsea", "pop": 143375, "reform": 9.6133, "health": 4.4778, "controlled_by": "Con", "party_seats": "Con", "el_type": "all-out", "tier": "filled"}, {"year": "2026", "name": "Kingston upon Hull, City of", "pop": 267014, "reform": 35.6644, "health": 6.83, "controlled_by": "unknown_thirds", "party_seats": "Reform", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Kingston upon Thames", "pop": 168063, "reform": 11.6578, "health": 3.3743, "controlled_by": "LD", "party_seats": "LD", "el_type": "all-out", "tier": "filled"}, {"year": "2026", "name": "Kirklees", "pop": 433217, "reform": 29.9619, "health": 5.5508, "controlled_by": "NOC", "party_seats": "NOC", "el_type": "all-out", "tier": "noc_filled"}, {"year": "2026", "name": "Knowsley", "pop": 154519, "reform": 30.7982, "health": 8.6138, "controlled_by": "unknown_thirds", "party_seats": "NOC", "el_type": "thirds", "tier": "noc_hollow"}, {"year": "2026", "name": "Lambeth", "pop": 317654, "reform": 3.9101, "health": 3.988, "controlled_by": "NOC", "party_seats": "NOC", "el_type": "all-out", "tier": "noc_filled"}, {"year": "2026", "name": "Leeds", "pop": 811953, "reform": 23.2631, "health": 5.0172, "controlled_by": "unknown_thirds", "party_seats": "NOC", "el_type": "thirds", "tier": "noc_hollow"}, {"year": "2026", "name": "Lewisham", "pop": 300550, "reform": 6.3763, "health": 4.3271, "controlled_by": "Grn", "party_seats": "Grn", "el_type": "all-out", "tier": "filled"}, {"year": "2026", "name": "Manchester", "pop": 551938, "reform": 16.4826, "health": 5.9749, "controlled_by": "unknown_thirds", "party_seats": "Grn", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Merton", "pop": 215182, "reform": 11.8603, "health": 3.3939, "controlled_by": "Lab", "party_seats": "Lab", "el_type": "all-out", "tier": "filled"}, {"year": "2026", "name": "Milton Keynes", "pop": 287060, "reform": 24.448, "health": 4.1479, "controlled_by": "NOC", "party_seats": "NOC", "el_type": "all-out", "tier": "noc_filled"}, {"year": "2026", "name": "Newcastle-under-Lyme", "pop": 123300, "reform": 41.0668, "health": 6.2555, "controlled_by": "Reform", "party_seats": "Reform", "el_type": "all-out", "tier": "filled"}, {"year": "2026", "name": "Newcastle upon Tyne", "pop": 300126, "reform": 24.2103, "health": 6.326, "controlled_by": "NOC", "party_seats": "NOC", "el_type": "all-out", "tier": "noc_filled"}, {"year": "2026", "name": "Newham", "pop": 351036, "reform": 5.1954, "health": 4.5246, "controlled_by": "NOC", "party_seats": "NOC", "el_type": "all-out", "tier": "noc_filled"}, {"year": "2026", "name": "Norfolk CC", "pop": 916121, "reform": 31.2097, "health": 5.5294, "controlled_by": "NOC", "party_seats": "NOC", "el_type": "all-out", "tier": "noc_filled"}, {"year": "2026", "name": "North East Lincolnshire", "pop": 156966, "reform": 45.8663, "health": 6.5008, "controlled_by": "unknown_thirds", "party_seats": "Reform", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "North Tyneside", "pop": 208965, "reform": 31.0564, "health": 6.2183, "controlled_by": "unknown_thirds", "party_seats": "NOC", "el_type": "thirds", "tier": "noc_hollow"}, {"year": "2026", "name": "Norwich", "pop": 143921, "reform": 20.6621, "health": 5.642, "controlled_by": "unknown_thirds", "party_seats": "Grn", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Nuneaton and Bedworth", "pop": 134197, "reform": 43.2852, "health": 5.8735, "controlled_by": "unknown_thirds", "party_seats": "Reform", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Oldham", "pop": 242088, "reform": 37.2029, "health": 6.2771, "controlled_by": "unknown_thirds", "party_seats": "Reform", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Oxford", "pop": 162039, "reform": 9.2361, "health": 3.3418, "controlled_by": "unknown_thirds", "party_seats": "NOC", "el_type": "thirds", "tier": "noc_hollow"}, {"year": "2026", "name": "Pendle", "pop": 95760, "reform": 31.7065, "health": 5.8177, "controlled_by": "unknown_thirds", "party_seats": "NOC", "el_type": "thirds", "tier": "noc_hollow"}, {"year": "2026", "name": "Peterborough", "pop": 215673, "reform": 27.2006, "health": 5.1073, "controlled_by": "unknown_thirds", "party_seats": "NOC", "el_type": "thirds", "tier": "noc_hollow"}, {"year": "2026", "name": "Plymouth", "pop": 264695, "reform": 37.191, "health": 6.4266, "controlled_by": "unknown_thirds", "party_seats": "Reform", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Portsmouth", "pop": 208003, "reform": 29.7105, "health": 4.9571, "controlled_by": "unknown_thirds", "party_seats": "LD", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Preston", "pop": 147835, "reform": 27.3415, "health": 5.5745, "controlled_by": "unknown_thirds", "party_seats": "NOC", "el_type": "thirds", "tier": "noc_hollow"}, {"year": "2026", "name": "Reading", "pop": 174224, "reform": 16.3738, "health": 3.6631, "controlled_by": "unknown_thirds", "party_seats": "NOC", "el_type": "thirds", "tier": "noc_hollow"}, {"year": "2026", "name": "Redbridge", "pop": 310258, "reform": 13.2489, "health": 4.0276, "controlled_by": "Lab", "party_seats": "Lab", "el_type": "all-out", "tier": "filled"}, {"year": "2026", "name": "Redditch", "pop": 87038, "reform": 39.1717, "health": 5.1828, "controlled_by": "unknown_thirds", "party_seats": "Reform", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Richmond upon Thames", "pop": 195278, "reform": 9.6336, "health": 3.0387, "controlled_by": "LD", "party_seats": "LD", "el_type": "all-out", "tier": "filled"}, {"year": "2026", "name": "Rochdale", "pop": 223773, "reform": 35.0061, "health": 6.4127, "controlled_by": "unknown_thirds", "party_seats": "Reform", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Rochford", "pop": 85661, "reform": 40.7988, "health": 4.2446, "controlled_by": "unknown_thirds", "party_seats": "Reform", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Rugby", "pop": 114363, "reform": 28.3045, "health": 4.2767, "controlled_by": "unknown_thirds", "party_seats": "NOC", "el_type": "thirds", "tier": "noc_hollow"}, {"year": "2026", "name": "Rushmoor", "pop": 99756, "reform": 31.331, "health": 3.7542, "controlled_by": "unknown_thirds", "party_seats": "NOC", "el_type": "thirds", "tier": "noc_hollow"}, {"year": "2026", "name": "Salford", "pop": 269923, "reform": 34.6703, "health": 5.9598, "controlled_by": "unknown_thirds", "party_seats": "Reform", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Sandwell", "pop": 341833, "reform": 36.272, "health": 6.6366, "controlled_by": "Reform", "party_seats": "Reform", "el_type": "all-out", "tier": "filled"}, {"year": "2026", "name": "Sefton", "pop": 279233, "reform": 26.6505, "health": 7.006, "controlled_by": "Lab", "party_seats": "Lab", "el_type": "all-out", "tier": "filled"}, {"year": "2026", "name": "Sheffield", "pop": 556522, "reform": 26.3905, "health": 6.0317, "controlled_by": "unknown_thirds", "party_seats": "NOC", "el_type": "thirds", "tier": "noc_hollow"}, {"year": "2026", "name": "Solihull", "pop": 216240, "reform": 31.5298, "health": 4.9598, "controlled_by": "NOC", "party_seats": "NOC", "el_type": "all-out", "tier": "noc_filled"}, {"year": "2026", "name": "Southampton", "pop": 248922, "reform": 25.6753, "health": 4.969, "controlled_by": "unknown_thirds", "party_seats": "NOC", "el_type": "thirds", "tier": "noc_hollow"}, {"year": "2026", "name": "South Cambridgeshire", "pop": 162116, "reform": 17.3062, "health": 3.429, "controlled_by": "LD", "party_seats": "LD", "el_type": "all-out", "tier": "filled"}, {"year": "2026", "name": "Southend-on-Sea", "pop": 180686, "reform": 31.2744, "health": 5.5738, "controlled_by": "unknown_thirds", "party_seats": "NOC", "el_type": "thirds", "tier": "noc_hollow"}, {"year": "2026", "name": "South Tyneside", "pop": 147778, "reform": 39.9225, "health": 7.6622, "controlled_by": "Reform", "party_seats": "Reform", "el_type": "all-out", "tier": "filled"}, {"year": "2026", "name": "Southwark", "pop": 307637, "reform": 4.8297, "health": 4.1237, "controlled_by": "NOC", "party_seats": "NOC", "el_type": "all-out", "tier": "noc_filled"}, {"year": "2026", "name": "St Albans", "pop": 148167, "reform": 16.087, "health": 3.0202, "controlled_by": "unknown_thirds", "party_seats": "LD", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Stevenage", "pop": 89495, "reform": 35.1938, "health": 4.6762, "controlled_by": "unknown_thirds", "party_seats": "Reform", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "St. Helens", "pop": 183245, "reform": 39.7476, "health": 7.5102, "controlled_by": "Reform", "party_seats": "Reform", "el_type": "all-out", "tier": "filled"}, {"year": "2026", "name": "Stockport", "pop": 294773, "reform": 24.8574, "health": 5.2919, "controlled_by": "unknown_thirds", "party_seats": "LD", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Suffolk CC", "pop": 760683, "reform": 32.8916, "health": 4.9164, "controlled_by": "Reform", "party_seats": "Reform", "el_type": "all-out", "tier": "filled"}, {"year": "2026", "name": "Sunderland", "pop": 274171, "reform": 41.3036, "health": 7.995, "controlled_by": "Reform", "party_seats": "Reform", "el_type": "all-out", "tier": "filled"}, {"year": "2026", "name": "Sutton", "pop": 209639, "reform": 20.1138, "health": 3.9182, "controlled_by": "LD", "party_seats": "LD", "el_type": "all-out", "tier": "filled"}, {"year": "2026", "name": "Swindon", "pop": 233410, "reform": 26.5133, "health": 4.445, "controlled_by": "NOC", "party_seats": "NOC", "el_type": "all-out", "tier": "noc_filled"}, {"year": "2026", "name": "Tameside", "pop": 231071, "reform": 41.9341, "health": 6.6075, "controlled_by": "unknown_thirds", "party_seats": "Reform", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Tamworth", "pop": 78647, "reform": 51.756, "health": 5.7141, "controlled_by": "unknown_thirds", "party_seats": "Reform", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Three Rivers", "pop": 93771, "reform": 21.7331, "health": 3.5149, "controlled_by": "unknown_thirds", "party_seats": "Con", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Thurrock", "pop": 176001, "reform": 51.4589, "health": 4.3403, "controlled_by": "Reform", "party_seats": "Reform", "el_type": "all-out", "tier": "filled"}, {"year": "2026", "name": "Tower Hamlets", "pop": 310306, "reform": 5.8997, "health": 4.8559, "controlled_by": "Other", "party_seats": "Other", "el_type": "all-out", "tier": "noc_filled"}, {"year": "2026", "name": "Trafford", "pop": 235052, "reform": 18.998, "health": 4.6492, "controlled_by": "unknown_thirds", "party_seats": "NOC", "el_type": "thirds", "tier": "noc_hollow"}, {"year": "2026", "name": "Tunbridge Wells", "pop": 115311, "reform": 21.1114, "health": 3.7984, "controlled_by": "unknown_thirds", "party_seats": "LD", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Wakefield", "pop": 353370, "reform": 44.424, "health": 6.5478, "controlled_by": "Reform", "party_seats": "Reform", "el_type": "all-out", "tier": "filled"}, {"year": "2026", "name": "Walsall", "pop": 284124, "reform": 37.3181, "health": 6.5837, "controlled_by": "Reform", "party_seats": "Reform", "el_type": "all-out", "tier": "filled"}, {"year": "2026", "name": "Waltham Forest", "pop": 278426, "reform": 6.6474, "health": 4.3925, "controlled_by": "Grn", "party_seats": "Grn", "el_type": "all-out", "tier": "filled"}, {"year": "2026", "name": "Wandsworth", "pop": 327506, "reform": 7.2756, "health": 3.1343, "controlled_by": "NOC", "party_seats": "NOC", "el_type": "all-out", "tier": "noc_filled"}, {"year": "2026", "name": "Watford", "pop": 102246, "reform": 19.8091, "health": 3.7253, "controlled_by": "unknown_thirds", "party_seats": "LD", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Welwyn Hatfield", "pop": 119836, "reform": 27.4346, "health": 3.8469, "controlled_by": "unknown_thirds", "party_seats": "NOC", "el_type": "thirds", "tier": "noc_hollow"}, {"year": "2026", "name": "West Lancashire", "pop": 117430, "reform": 32.0231, "health": 5.6612, "controlled_by": "unknown_thirds", "party_seats": "NOC", "el_type": "thirds", "tier": "noc_hollow"}, {"year": "2026", "name": "Westminster", "pop": 204236, "reform": 10.7569, "health": 5.0853, "controlled_by": "Con", "party_seats": "Con", "el_type": "all-out", "tier": "filled"}, {"year": "2026", "name": "West Oxfordshire", "pop": 114237, "reform": 20.3203, "health": 3.5689, "controlled_by": "unknown_thirds", "party_seats": "NOC", "el_type": "thirds", "tier": "noc_hollow"}, {"year": "2026", "name": "West Surrey CC", "pop": 657309, "reform": 20.6204, "health": 3.3882, "controlled_by": "LD", "party_seats": "LD", "el_type": "all-out", "tier": "filled"}, {"year": "2026", "name": "West Sussex CC", "pop": 882678, "reform": 28.3534, "health": 4.4605, "controlled_by": "NOC", "party_seats": "NOC", "el_type": "all-out", "tier": "noc_filled"}, {"year": "2026", "name": "Wigan", "pop": 329331, "reform": 46.273, "health": 6.2402, "controlled_by": "unknown_thirds", "party_seats": "Reform", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Winchester", "pop": 127443, "reform": 17.2816, "health": 3.4274, "controlled_by": "unknown_thirds", "party_seats": "LD", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Wokingham", "pop": 177500, "reform": 18.5542, "health": 2.653, "controlled_by": "unknown_thirds", "party_seats": "LD", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Wolverhampton", "pop": 263727, "reform": 34.2094, "health": 6.3463, "controlled_by": "unknown_thirds", "party_seats": "Reform", "el_type": "thirds", "tier": "hollow"}, {"year": "2026", "name": "Worthing", "pop": 111340, "reform": 26.8822, "health": 5.2398, "controlled_by": "unknown_thirds", "party_seats": "NOC", "el_type": "thirds", "tier": "noc_hollow"}], "slope": 5.44574191040865, "intercept": -0.43704153008120145, "label_set": [{"name": "Thurrock", "ha": "right", "va": "above"}, {"name": "Cannock Chase", "ha": "right", "va": "above"}, {"name": "Wolverhampton", "ha": "left", "va": "below"}, {"name": "Doncaster", "ha": "right", "va": "below"}, {"name": "Sunderland", "ha": "right", "va": "above"}, {"name": "Bromley", "ha": "left", "va": "below"}, {"name": "Sefton", "ha": "right", "va": "above"}, {"name": "Richmond upon Thames", "ha": "left", "va": "below"}, {"name": "Hackney", "ha": "left", "va": "below"}]};
+
+// ------- Geometry -------
+const W = 760, H = 720;
+const M = { left: 60, right: 30, top: 28, bottom: 56 };
+const XMIN = 2.2, XMAX = 9.4;
+const YMIN = 0,   YMAX = 60;
+
+const partyMap = {
+  Reform: { fill: "var(--reform)", edge: "var(--reform-dark)", code: "reform" },
+  Con:    { fill: "var(--con)",    edge: "var(--con-dark)",    code: "con" },
+  Lab:    { fill: "var(--lab)",    edge: "var(--lab-dark)",    code: "lab" },
+  LD:     { fill: "var(--ld)",     edge: "var(--ld-dark)",     code: "ld" },
+  Grn:    { fill: "var(--grn)",    edge: "var(--grn-dark)",    code: "grn" },
+  NOC:    { fill: "var(--noc)",    edge: "var(--noc-dark)",    code: "noc" },
+};
+const partyLabel = {
+  Reform: "Reform UK",
+  Con: "Conservative",
+  Lab: "Labour",
+  LD: "Liberal Democrat",
+  Grn: "Green",
+  NOC: "No overall control",
+  Other: "Other",
+};
+
+const xScale = (x) => M.left + (x - XMIN) / (XMAX - XMIN) * (W - M.left - M.right);
+const yScale = (y) => H - M.bottom - (y - YMIN) / (YMAX - YMIN) * (H - M.top - M.bottom);
+
+// Size scaling matching matplotlib version (logarithmic on population)
+const pops = DATA.rows.map(r => r.pop).filter(p => p > 0);
+const minLogP = Math.log(Math.min(...pops));
+const maxLogP = Math.log(Math.max(...pops));
+function radius(r) {
+  if (!r.pop) return 5;
+  const t = (Math.log(r.pop) - minLogP) / (maxLogP - minLogP);
+  // base s = 30..210, so radius = sqrt(s/pi) but eyeball-tuned
+  return 4.5 + 6 * t;
+}
+
+// ------- Render SVG -------
+const svg = document.getElementById("chart");
+
+// Grid lines and ticks
+const xTicks = [3,4,5,6,7,8,9];
+const yTicks = [0,10,20,30,40,50,60];
+
+let gridSVG = "";
+xTicks.forEach(t => {
+  const xp = xScale(t);
+  gridSVG += `<line x1="${xp}" x2="${xp}" y1="${M.top}" y2="${H - M.bottom}" stroke="var(--grid)" stroke-width="1"/>`;
+  gridSVG += `<text x="${xp}" y="${H - M.bottom + 18}" font-size="11" fill="#444" text-anchor="middle">${t}</text>`;
+});
+yTicks.forEach(t => {
+  const yp = yScale(t);
+  gridSVG += `<line x1="${M.left}" x2="${W - M.right}" y1="${yp}" y2="${yp}" stroke="var(--grid)" stroke-width="1"/>`;
+  gridSVG += `<text x="${M.left - 8}" y="${yp + 4}" font-size="11" fill="#444" text-anchor="end">${t}</text>`;
+});
+
+// Axis labels
+gridSVG += `<text x="${(W + M.left - M.right) / 2}" y="${H - 14}" font-size="13" fill="var(--muted)" text-anchor="middle">% in bad or very bad health (Census 2021)</text>`;
+gridSVG += `<text transform="translate(20,${(H + M.top - M.bottom) / 2}) rotate(-90)" font-size="13" fill="var(--muted)" text-anchor="middle">Reform UK share of council vote (%)</text>`;
+
+// Trend line
+const tx1 = xScale(2.4), ty1 = yScale(DATA.intercept + DATA.slope * 2.4);
+const tx2 = xScale(9.0), ty2 = yScale(DATA.intercept + DATA.slope * 9.0);
+gridSVG += `<line x1="${tx1}" y1="${ty1}" x2="${tx2}" y2="${ty2}" stroke="var(--ink)" stroke-width="1.6" opacity="0.6"/>`;
+
+svg.innerHTML = gridSVG;
+
+// ------- Dots -------
+// Order: NOC first (background), then thirds-sweeps (hollow), then all-out winners (filled)
+const order = (r) => {
+  if (r.tier === "noc_filled") return 0;
+  if (r.tier === "noc_hollow") return 1;
+  if (r.tier === "hollow") return 2;
+  if (r.tier === "filled") return 3;
+  return 0;
+};
+const sorted = [...DATA.rows].sort((a,b) => order(a) - order(b));
+
+const dotsGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+dotsGroup.setAttribute("id", "dots");
+svg.appendChild(dotsGroup);
+
+const labelLookup = {};
+DATA.label_set.forEach(l => { labelLookup[l.name] = l; });
+
+const dotEls = {};
+
+sorted.forEach((r) => {
+  const cx = xScale(r.health);
+  const cy = yScale(r.reform);
+  const rad = radius(r);
+
+  const party = r.party_seats;
+  const isWinner = (party in partyMap) && party !== "NOC" && party !== "Other";
+
+  let circles = [];
+  if (r.tier === "noc_filled") {
+    circles.push({
+      cx, cy, r: rad * 0.95,
+      fill: "var(--noc)", stroke: "#fff", strokeWidth: 0.6, opacity: 0.30
+    });
+  } else if (r.tier === "noc_hollow") {
+    circles.push({
+      cx, cy, r: rad * 1.15,
+      fill: "var(--bg)", stroke: "var(--noc-dark)", strokeWidth: 1.2, opacity: 0.55
+    });
+  } else if (r.tier === "hollow" && isWinner) {
+    const p = partyMap[party];
+    circles.push({
+      cx, cy, r: rad * 1.15,
+      fill: "var(--bg)", stroke: p.fill, strokeWidth: 1.6, opacity: 1.0
+    });
+  } else if (r.tier === "filled" && isWinner) {
+    const p = partyMap[party];
+    // outer dark halo
+    circles.push({
+      cx, cy, r: rad * 1.42,
+      fill: "none", stroke: p.edge, strokeWidth: 1.2, opacity: 1.0
+    });
+    // inner filled
+    circles.push({
+      cx, cy, r: rad,
+      fill: p.fill, stroke: "#fff", strokeWidth: 0.7, opacity: 1.0
+    });
+  }
+
+  const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  g.classList.add("dot");
+  g.setAttribute("data-name", r.name);
+  circles.forEach(c => {
+    const el = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    el.setAttribute("cx", c.cx); el.setAttribute("cy", c.cy);
+    el.setAttribute("r", c.r);
+    el.setAttribute("fill", c.fill);
+    el.setAttribute("stroke", c.stroke);
+    el.setAttribute("stroke-width", c.strokeWidth);
+    if (c.opacity !== 1.0) el.setAttribute("opacity", c.opacity);
+    g.appendChild(el);
+  });
+
+  // Larger invisible hit area for easier hover/tap
+  const hit = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+  hit.setAttribute("cx", cx); hit.setAttribute("cy", cy);
+  hit.setAttribute("r", Math.max(rad * 1.6, 8));
+  hit.setAttribute("fill", "transparent");
+  hit.setAttribute("pointer-events", "all");
+  g.appendChild(hit);
+
+  g.addEventListener("mouseenter", () => showTooltip(r, cx, cy, g));
+  g.addEventListener("mousemove", (e) => moveTooltip(e));
+  g.addEventListener("mouseleave", () => hideTooltip(g));
+  g.addEventListener("touchstart", (e) => { e.preventDefault(); showTooltip(r, cx, cy, g); }, { passive: false });
+
+  dotsGroup.appendChild(g);
+  dotEls[r.name] = g;
+});
+
+// ------- Labels: intentionally omitted in interactive mode -------
+// Static labels duplicate the hover tooltips and clutter the chart.
+// On hover, the dot is identified by name in the tooltip instead.
+
+// ------- Tooltip -------
+const wrap = document.getElementById("chartWrap");
+const tooltip = document.getElementById("tooltip");
+
+function statusLine(r) {
+  const pl = partyLabel[r.party_seats] || r.party_seats;
+  if (r.tier === "filled") {
+    return `${pl} won majority (all-out election)`;
+  }
+  if (r.tier === "hollow") {
+    return `${pl} swept this year's contested seats (thirds)`;
+  }
+  if (r.tier === "noc_filled") {
+    return `No party won majority (all-out election)`;
+  }
+  if (r.tier === "noc_hollow") {
+    return `No party won majority (thirds election)`;
+  }
+  return "";
+}
+
+function fmtPop(p) {
+  if (!p) return "—";
+  if (p >= 1e6) return (p / 1e6).toFixed(2) + " m";
+  return (p / 1000).toFixed(0) + " k";
+}
+
+function showTooltip(r, cx, cy, g) {
+  wrap.classList.add("has-hover");
+  g.classList.add("hovered");
+  // Build content
+  tooltip.innerHTML = `
+    <div class="name">${r.name}</div>
+    <div class="year">${r.year} · ${r.el_type === "all-out" ? "all-out election" : "thirds election"}</div>
+    <div class="stat"><span class="stat-label">Reform UK vote share</span><span class="stat-value">${r.reform.toFixed(1)}%</span></div>
+    <div class="stat"><span class="stat-label">In bad / very bad health</span><span class="stat-value">${r.health.toFixed(1)}%</span></div>
+    <div class="stat"><span class="stat-label">Population</span><span class="stat-value">${fmtPop(r.pop)}</span></div>
+    <div class="stat"><span class="stat-label">Status</span><span class="stat-value" style="font-size: 11.5px; text-align:right;">${statusLine(r)}</span></div>
+  `;
+  tooltip.classList.add("visible");
+  positionTooltipAt(cx, cy);
+}
+
+function positionTooltipAt(cx, cy) {
+  // Convert SVG coords to wrapper coords
+  const svgEl = document.getElementById("chart");
+  const rect = svgEl.getBoundingClientRect();
+  const scaleX = rect.width / W;
+  const scaleY = rect.height / H;
+  let px = cx * scaleX + 14;
+  let py = cy * scaleY - 12;
+  // Keep on screen
+  const ttRect = tooltip.getBoundingClientRect();
+  if (px + ttRect.width > rect.width - 4) px = cx * scaleX - ttRect.width - 14;
+  if (py < 4) py = 4;
+  if (py + ttRect.height > rect.height - 4) py = rect.height - ttRect.height - 4;
+  tooltip.style.left = px + "px";
+  tooltip.style.top = py + "px";
+}
+
+function moveTooltip(e) {
+  // re-position based on event location, fixed offset from cursor
+  const rect = wrap.getBoundingClientRect();
+  let px = e.clientX - rect.left + 14;
+  let py = e.clientY - rect.top - 12;
+  const ttRect = tooltip.getBoundingClientRect();
+  if (px + ttRect.width > rect.width - 4) px = e.clientX - rect.left - ttRect.width - 14;
+  if (py < 4) py = 4;
+  if (py + ttRect.height > rect.height - 4) py = rect.height - ttRect.height - 4;
+  tooltip.style.left = px + "px";
+  tooltip.style.top = py + "px";
+}
+
+function hideTooltip(g) {
+  wrap.classList.remove("has-hover");
+  if (g) g.classList.remove("hovered");
+  tooltip.classList.remove("visible");
+}
+
+// Hide tooltip when tapping outside on touch devices
+document.addEventListener("touchstart", (e) => {
+  if (!e.target.closest(".dot")) {
+    hideTooltip();
+    document.querySelectorAll(".dot.hovered").forEach(g => g.classList.remove("hovered"));
+  }
+});
+
+</script>
+</body>
+</html>
